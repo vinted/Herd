@@ -83,7 +83,7 @@ defaults = [
         "maximum length slice to send to peers, larger requests are ignored"),
     ('max_rate_period', 20.0,
         "maximum amount of time to guess the current rate estimate represents"),
-    ('bind', '', 
+    ('bind', '',
         'comma-separated list of ips/hostnames to bind to locally'),
 #    ('ipv6_enabled', autodetect_ipv6(),
     ('ipv6_enabled', 0,
@@ -93,7 +93,7 @@ defaults = [
     ('upnp_nat_access', 0,
         'attempt to autoconfigure a UPnP router to forward a server port ' +
         '(0 = disabled, 1 = mode 1 [fast], 2 = mode 2 [slow])'),
-    ('upload_rate_fudge', 5.0, 
+    ('upload_rate_fudge', 5.0,
         'time equivalent of writing to kernel-level TCP buffer, for rate adjustment'),
     ('tcp_ack_fudge', 0.03,
         'how much TCP ACK download overhead to add to upload rate calculations ' +
@@ -102,15 +102,15 @@ defaults = [
         'time between updates of displayed information'),
     ('rerequest_interval', 15,
         'time to wait between requesting more peers'),
-    ('min_peers', 20, 
+    ('min_peers', 20,
         'minimum number of peers to not do rerequesting'),
-    ('http_timeout', 5, 
+    ('http_timeout', 5,
         'number of seconds to wait before assuming that an http connection has timed out'),
     ('max_initiate', 40,
         'number of peers at which to stop initiating new connections'),
     ('check_hashes', 1,
         'whether to check hashes on disk'),
-    ('max_upload_rate', 0,
+    ('max_upload_rate', 10000,
         'maximum kB/s to upload at (0 = no limit, -1 = automatic)'),
     ('max_download_rate', 0,
         'maximum kB/s to download at (0 = no limit)'),
@@ -181,7 +181,7 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols,
     if not config:
         errorfunc(get_usage())
         return
-    
+
     myid = createPeerID()
     seed(myid)
 
@@ -233,9 +233,9 @@ def download(params, filefunc, statusfunc, finfunc, errorfunc, doneflag, cols,
                     'info_hash' : infohash, # string
                     'start_connection' : d._startConnection, # start_connection((<string ip>, <int port>), <peer id>)
                     })
-        
+
     rawserver.listen_forever(d.getPortHandler())
-    
+
     d.shutdown()
 
 
@@ -290,11 +290,11 @@ def get_response(file, url, errorfunc):
                 errorfunc(url+' bad url')
                 return None
         response = h.read()
-    
+
     except IOError, e:
         errorfunc('problem getting response info - ' + str(e))
         return None
-    try:    
+    try:
         h.close()
     except:
         pass
@@ -312,7 +312,7 @@ def get_response(file, url, errorfunc):
     return response
 
 
-class BT1Download:    
+class BT1Download:
     def __init__(self, statusfunc, finfunc, errorfunc, excfunc, doneflag,
                  config, response, infohash, id, rawserver, port,
                  appdataobj = None):
@@ -327,7 +327,7 @@ class BT1Download:
         self.myid = id
         self.rawserver = rawserver
         self.port = port
-        
+
         self.info = self.response['info']
         self.pieces = [self.info['pieces'][x:x+20]
                        for x in xrange(0, len(self.info['pieces']), 20)]
@@ -346,7 +346,7 @@ class BT1Download:
         self.finflag = Event()
         self.rerequest = None
         self.tcp_ack_fudge = config['tcp_ack_fudge']
-        
+
         self.selector_enabled = config['selector_enabled']
         if appdataobj:
             self.appdataobj = appdataobj
@@ -373,7 +373,7 @@ class BT1Download:
             if path.exists(path.join(loc, x['path'][0])):
                 return True
         return False
-                
+
 
     def saveAs(self, filefunc, pathfunc = None):
         try:
@@ -400,7 +400,7 @@ class BT1Download:
                 if file is None:
                     return None
 
-                # if this path exists, and no files from the info dict exist, we assume it's a new download and 
+                # if this path exists, and no files from the info dict exist, we assume it's a new download and
                 # the user wants to create a new directory with the default name
                 existing = 0
                 if path.exists(file):
@@ -441,7 +441,7 @@ class BT1Download:
         self.datalength = file_length
 
         return file
-    
+
 
     def getFilename(self):
         return self.filename
@@ -472,7 +472,7 @@ class BT1Download:
         self.doneflag.set()
         if reason is not None:
             self.errorfunc(reason)
-        
+
 
     def initFiles(self, old_style = False, statusfunc = None):
         if self.doneflag.isSet():
@@ -521,7 +521,7 @@ class BT1Download:
                 statusfunc, self.doneflag, self.config['check_hashes'],
                 self._data_flunked, self.rawserver.add_task,
                 self.config, self.unpauseflag)
-            
+
         except ValueError, e:
             self._failed('bad data - ' + str(e))
         except IOError, e:
@@ -539,7 +539,7 @@ class BT1Download:
                 data = data.get('resume data')
                 if data:
                     self.fileselector.unpickle(data)
-                
+
         self.checking = True
         if old_style:
             return self.storagewrapper.old_style_init()
@@ -606,7 +606,7 @@ class BT1Download:
                                            self.config['upload_unit_size'],
                                            self.setConns)
             self.ratelimiter.set_upload_rate(self.config['max_upload_rate'])
-        
+
         self.ratemeasure = RateMeasure()
         self.ratemeasure_datarejected = self.ratemeasure.data_rejected
 
@@ -671,10 +671,10 @@ class BT1Download:
         else:
             trackerlist = [[self.response['announce']]]
 
-        self.rerequest = Rerequester(trackerlist, self.config['rerequest_interval'], 
-            self.rawserver.add_task, self.connecter.how_many_connections, 
+        self.rerequest = Rerequester(trackerlist, self.config['rerequest_interval'],
+            self.rawserver.add_task, self.connecter.how_many_connections,
             self.config['min_peers'], self.encoder.start_connections,
-            self.rawserver.add_task, self.storagewrapper.get_amount_left, 
+            self.rawserver.add_task, self.storagewrapper.get_amount_left,
             self.upmeasure.get_total, self.downmeasure.get_total, self.port, self.config['ip'],
             self.myid, self.infohash, self.config['http_timeout'],
             self.errorfunc, self.excfunc, self.config['max_initiate'],
@@ -756,7 +756,7 @@ class BT1Download:
             self.rawserver.add_task(s)
         except AttributeError:
             pass
-        
+
     def setDownloadRate(self, rate):
         try:
             def s(self = self, rate = rate):
@@ -768,10 +768,10 @@ class BT1Download:
 
     def startConnection(self, ip, port, id):
         self.encoder._start_connection((ip, port), id)
-      
+
     def _startConnection(self, ipandport, id):
         self.encoder._start_connection(ipandport, id)
-        
+
     def setInitiate(self, initiate):
         try:
             def s(self = self, initiate = initiate):
@@ -840,7 +840,7 @@ class BT1Download:
         self.downloader.pause(True)
         self.encoder.pause(True)
         self.choker.pause(True)
-    
+
     def Unpause(self):
         self.unpauseflag.set()
         self.rawserver.add_task(self.onUnpause)
