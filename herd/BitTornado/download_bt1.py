@@ -110,7 +110,7 @@ defaults = [
         'number of peers at which to stop initiating new connections'),
     ('check_hashes', 1,
         'whether to check hashes on disk'),
-    ('max_upload_rate', -1,
+    ('max_upload_rate', 15000,
         'maximum kB/s to upload at (0 = no limit, -1 = automatic)'),
     ('max_download_rate', 0,
         'maximum kB/s to download at (0 = no limit)'),
