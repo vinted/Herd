@@ -105,14 +105,16 @@ def run(local_file, remote_file, hosts):
     s = threading.Thread(target=seed, args=(torrent_file, local_file,))
     s.daemon = True
     s.start()
-    log.info("Transferring")
-    if not os.path.isfile(bittornado_tgz):
-        cwd = os.getcwd()
-        os.chdir(herd_root)
-        args = ['tar', 'czf', 'bittornado.tar.gz', 'BitTornado']
-        log.info("Executing: " + " ".join(args))
-        subprocess.call(args)
-        os.chdir(cwd)
+
+    log.info("Transferring files to remote hosts")
+
+    cwd = os.getcwd()
+    os.chdir(herd_root)
+    args = ['tar', 'czf', 'bittornado.tar.gz', 'BitTornado']
+    log.info("Creating a new archive of BitTornado: " + " ".join(args))
+    subprocess.call(args)
+    os.chdir(cwd)
+
     threads = []
     for host in hosts:
         td = threading.Thread(target=transfer, args=(
@@ -139,12 +141,14 @@ def transfer(host, local_file, remote_target, retry=0):
     rp = opts['remote_path']
     file_name = os.path.basename(local_file)
     remote_file = '%s/%s' % (rp, file_name)
-    if ssh(host, 'test -d %s/BitTornado' % rp) != 0:
-        ssh(host, "mkdir -p %s" % rp)
-        scp(host, bittornado_tgz, '%s/bittornado.tar.gz' % rp)
-        ssh(host, "cd %s; tar zxvf bittornado.tar.gz > /dev/null" % rp)
-        scp(host, murderclient_py, '%s/murder_client.py' % rp)
-        scp(host, herd_py, '%s/herd.py' % rp)
+
+    log.info("Transfering Herd to %s at %s" % (host, rp))
+    ssh(host, "mkdir -p %s" % rp)
+    scp(host, bittornado_tgz, '%s/bittornado.tar.gz' % rp)
+    ssh(host, "cd %s; tar zxvf bittornado.tar.gz > /dev/null" % rp)
+    scp(host, murderclient_py, '%s/murder_client.py' % rp)
+    scp(host, herd_py, '%s/herd.py' % rp)
+
     log.info("Copying %s to %s:%s" % (local_file, host, remote_file))
     scp(host, local_file, remote_file)
     command = 'python %s/murder_client.py peer %s %s' % (
